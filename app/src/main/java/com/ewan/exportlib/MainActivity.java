@@ -15,8 +15,6 @@ public class MainActivity extends AppCompatActivity {
 
     static final int[] intArray = { 1, 2, 3 };
 
-//    static final float[] rotation = {1.0f, 2.0f, 3.0f, 4.0f};
-
     // Used to load the 'exportlib' library on application startup.
     static {
         System.loadLibrary("exportlib");
@@ -35,28 +33,19 @@ public class MainActivity extends AppCompatActivity {
         TextView tv = binding.sampleText;
         tv.setText(stringFromJNI());
 
-        /**
-         * 1. Java call native c++
-         * 没有返回值，无参数
-         */
+        //-----------------------
+
+        Log.v(TAG, "[Java] Java call C++, no return , no param");
         initialize();
 
-        /**
-         * 2. Java call native c++
-         * 没有返回值，参数为int数组
-         */
+        Log.v(TAG, "[Java] Java call C++, no return , pass int array");
         passIntArray(intArray);
 
-        /**
-         * 3. Java call native c++
-         * 返回值为float数组，无参数
-         */
+        Log.v(TAG, "[Java] Java call C++, return float array , no param");
         float[] returnFloatArray = returnFloatArray();
-        Log.d(TAG,"return float array :" + returnFloatArray[0] + "," + returnFloatArray[1] + "," + returnFloatArray[2]);
+        Log.v(TAG,"[Java] return float array :" + returnFloatArray[0] + "," + returnFloatArray[1] + "," + returnFloatArray[2]);
 
-        /**
-         * 调native c++ 让cpp里的函数可以被调用
-         */
+        Log.v(TAG, "[Java] Java call C++ to drive C++ call Java func");
         callNative();
     }
 
@@ -84,7 +73,7 @@ public class MainActivity extends AppCompatActivity {
     public native float[] returnFloatArray();
 
     /**
-     * 调一个native c++来执行c++里的函数
+     * 调一个native func来执行c++里的函数,让C++ call Java func
      */
     public native void callNative();
 
@@ -92,7 +81,7 @@ public class MainActivity extends AppCompatActivity {
      * 4.called by c++ : 无返回值，无参数
      */
     public void Initialize() {
-        Log.d(TAG, "native c++ call Java successful");
+        Log.v(TAG, "[Java]C++ call Java , no return, no param");
     }
 
     /**
@@ -100,7 +89,7 @@ public class MainActivity extends AppCompatActivity {
      * @param funcName
      */
     public void PassStringValue(String funcName) {
-        Log.d(TAG, funcName);
+        Log.v(TAG, "[Java]C++ call Java , no return, pass string: " + funcName);
     }
 
     /**
@@ -108,6 +97,8 @@ public class MainActivity extends AppCompatActivity {
      * @return
      */
     public String ReturnString() {
-        return "ReturnString";
+        String str = "Hello c++";
+        Log.v(TAG, "[Java]C++ call Java , return string: " + str +", no param");
+        return str;
     }
 }

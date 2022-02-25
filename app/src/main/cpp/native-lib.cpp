@@ -10,17 +10,52 @@ Java_com_ewan_exportlib_MainActivity_stringFromJNI(
     return env->NewStringUTF(hello.c_str());
 }
 
-static JNIEnv* g_pEnv;
-static jobject g_jobj;
+//-------------------------
 
 /**
- * 1.保存下JNIEnv和jobject，没有返回值，不传参
+ * 保存一个JavaVM
+ */
+static JavaVM* g_jvm;
+/**
+ * 保存MainActivity这个对象
+ */
+static jobject g_obj;
+
+JNIEXPORT jint JNI_OnLoad(JavaVM* vm, void *reserved)
+{
+    g_jvm= vm;
+    return JNI_VERSION_1_6;
+}
+
+JNIEnv* get_env(int* attach) {
+    if (g_jvm == NULL) return NULL;
+    JNIEnv* env = NULL;
+    int status = g_jvm->GetEnv((void **)&env, JNI_VERSION_1_6);
+    if (status == JNI_EDETACHED || env == NULL)
+    {
+        status = g_jvm->AttachCurrentThread(&env, NULL);
+        if (status < 0)
+        {
+            env = NULL;
+        } else {
+            *attach = 1;
+        }
+    }
+    return env;
+}
+
+void del_env() {
+    g_jvm->DetachCurrentThread();
+}
+
+
+/**
+ * 1.保存下JNIEnv，没有返回值，不传参
  */
 extern "C" JNIEXPORT void JNICALL
 Java_com_ewan_exportlib_MainActivity_initialize(JNIEnv* env, jobject obj) {
-    g_pEnv = env;
-    g_jobj = obj;
-    LOGD("no pass value no return");
+    LOGV("[CPP] Java call C++, no return, no param");
+    g_obj = env->NewGlobalRef(obj);
 }
 
 /**
@@ -34,7 +69,7 @@ Java_com_ewan_exportlib_MainActivity_passIntArray(JNIEnv* env, jobject obj, jint
     for (int i = 0; i < length; i++) {
         intArray[i] = *(pInt + i);
     }
-    LOGD("passIntArray: %i,%i,%i",intArray[0], intArray[1], intArray[2]);
+    LOGV("[CPP] Java call C++, no return , pass int array : %i,%i,%i", intArray[0], intArray[1], intArray[2]);
 }
 
 /**
@@ -46,6 +81,7 @@ Java_com_ewan_exportlib_MainActivity_returnFloatArray(JNIEnv* env, jobject obj) 
     int length = std::end(value) - std::begin(value);
     jfloatArray jfArray = env->NewFloatArray(length);
     env->SetFloatArrayRegion(jfArray, 0, length, value);
+    LOGV("[CPP] Java call C++, return float array: %f, %f, %f , no param", value[0], value[1], value[2]);
     return jfArray;
 }
 
@@ -54,9 +90,12 @@ Java_com_ewan_exportlib_MainActivity_returnFloatArray(JNIEnv* env, jobject obj) 
  * 无返回值，无参数
  */
 static void Initialize() {
-    jclass clazz = g_pEnv->GetObjectClass(g_jobj);
-    jmethodID id = g_pEnv->GetMethodID(clazz, "Initialize", "()V");
-    g_pEnv->CallVoidMethod(g_jobj, id);
+    int* attach = 0;
+    JNIEnv* env = get_env(attach);
+    jclass clazz = env->GetObjectClass(g_obj);
+    jmethodID id = env->GetMethodID(clazz, "Initialize", "()V");
+    env->CallVoidMethod(g_obj, id);
+    LOGV("[CPP] C++ call Java, no return, no param");
 }
 
 /**
@@ -65,10 +104,12 @@ static void Initialize() {
  * @param funcName
  */
 static void PassStringValue(std::string funcName) {
-    jclass clazz = g_pEnv->GetObjectClass(g_jobj);
-    jmethodID id = g_pEnv->GetMethodID(clazz, "PassStringValue", "(Ljava/lang/String;)V");
-    jstring str = g_pEnv->NewStringUTF(funcName.c_str());
-    g_pEnv->CallVoidMethod(g_jobj, id, str);
+    int* attach = 0;
+    JNIEnv* env = get_env(attach);
+    jclass clazz = env->GetObjectClass(g_obj);
+    jmethodID id = env->GetMethodID(clazz, "PassStringValue", "(Ljava/lang/String;)V");
+    jstring str = env->NewStringUTF(funcName.c_str());
+    env->CallVoidMethod(g_obj, id, str);
 }
 
 /**
@@ -77,12 +118,14 @@ static void PassStringValue(std::string funcName) {
  * @return
  */
 static std::string ReturnString() {
-    jclass clazz = g_pEnv->GetObjectClass(g_jobj);
-    jmethodID id = g_pEnv->GetMethodID(clazz, "ReturnString", "()Ljava/lang/String;");
-    jstring str = (jstring)g_pEnv->CallObjectMethod(g_jobj, id);
+    int* attach = 0;
+    JNIEnv* env = get_env(attach);
+    jclass clazz = env->GetObjectClass(g_obj);
+    jmethodID id = env->GetMethodID(clazz, "ReturnString", "()Ljava/lang/String;");
+    jstring str = (jstring)env->CallObjectMethod(g_obj, id);
     const char* c_str = nullptr;
-    c_str = g_pEnv->GetStringUTFChars(str, 0);
-    g_pEnv->ReleaseStringUTFChars(str, c_str);
+    c_str = env->GetStringUTFChars(str, 0);
+    env->ReleaseStringUTFChars(str, c_str);
     return std::string (c_str);
 }
 
@@ -91,22 +134,17 @@ static std::string ReturnString() {
  */
 extern "C" JNIEXPORT void JNICALL
 Java_com_ewan_exportlib_MainActivity_callNative(JNIEnv* env, jobject obj) {
-    /**
-     * 4. c++ call Java
-     */
+
+    LOGV("[CPP] C++ call Java, no return, no param");
     Initialize();
 
-    /**
-     * 5. c++ call Java
-     */
+    LOGV("[CPP] C++ call Java, no return, pass string");
     std::string funcName = "PassStringValue";
     PassStringValue(funcName);
 
-    /**
-     * 6. c++ call Java
-     */
+    LOGV("[CPP] C++ call Java, return string, no param");
     std::string str = ReturnString();
-    LOGD("%s", str.c_str());
+    LOGV("[CPP] C++ call Java , return string : %s", str.c_str());
 }
 
 
