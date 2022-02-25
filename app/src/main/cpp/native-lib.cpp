@@ -21,11 +21,6 @@ static JavaVM* g_jvm;
  */
 static jobject g_obj;
 
-JNIEXPORT jint JNI_OnLoad(JavaVM* vm, void *reserved)
-{
-    g_jvm= vm;
-    return JNI_VERSION_1_6;
-}
 
 JNIEnv* get_env(int* attach) {
     if (g_jvm == NULL) return NULL;
@@ -147,5 +142,30 @@ Java_com_ewan_exportlib_MainActivity_callNative(JNIEnv* env, jobject obj) {
     LOGV("[CPP] C++ call Java , return string : %s", str.c_str());
 }
 
+JNIEXPORT jint JNI_OnLoad(JavaVM* vm, void *reserved)
+{
+    g_jvm= vm;
+    //--显示注册Native methods,可以预先检查符合是否存在，可以获得更小运行更快的库
+    JNIEnv* env;
+    if (vm->GetEnv(reinterpret_cast<void**>(&env), JNI_VERSION_1_6) != JNI_OK)
+    {
+        return JNI_ERR;
+    }
+    jclass clz = env->FindClass("com/ewan/exportlib/MainActivity");
+    if (clz == nullptr)
+    {
+        return JNI_ERR;
+    }
+    static const JNINativeMethod methods[] = {
+            {"initialize", "()V", reinterpret_cast<void*>(Java_com_ewan_exportlib_MainActivity_initialize)},
+            {"passIntArray","([I)V", reinterpret_cast<void*>(Java_com_ewan_exportlib_MainActivity_passIntArray)},
+            {"returnFloatArray","()[F", reinterpret_cast<void*>(Java_com_ewan_exportlib_MainActivity_returnFloatArray)},
+            {"callNative", "()V", reinterpret_cast<void*>(Java_com_ewan_exportlib_MainActivity_callNative)},
+    };
+    int rc = env->RegisterNatives(clz, methods, sizeof(methods)/sizeof(JNINativeMethod));
+    if (rc != JNI_OK) return rc;
+
+    return JNI_VERSION_1_6;
+}
 
 
