@@ -2,6 +2,7 @@ package com.ewan.exportlib;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.nfc.Tag;
 import android.os.Bundle;
 import android.os.Debug;
 import android.util.Log;
@@ -47,6 +48,8 @@ public class MainActivity extends AppCompatActivity {
 
         Log.v(TAG, "[Java] Java call C++ to drive C++ call Java func");
         callNative();
+        Log.v(TAG, "test");
+        passStringToNative("A1:B2:C3:D4:E5");
     }
 
     /**
@@ -71,6 +74,12 @@ public class MainActivity extends AppCompatActivity {
      * @return
      */
     public native float[] returnFloatArray();
+
+    /**
+     * 声明native method : 无返回值，传String
+     * @param value
+     */
+    public native void passStringToNative(String value);
 
     /**
      * 调一个native func来执行c++里的函数,让C++ call Java func

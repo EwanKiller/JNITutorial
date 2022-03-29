@@ -79,6 +79,15 @@ Java_com_ewan_exportlib_MainActivity_returnFloatArray(JNIEnv* env, jobject obj) 
     LOGV("[CPP] Java call C++, return float array: %f, %f, %f , no param", value[0], value[1], value[2]);
     return jfArray;
 }
+std::string cppStr = "";
+extern "C" JNIEXPORT void JNICALL
+Java_com_ewan_exportlib_MainActivity_passStringToNative(JNIEnv *env, jobject, jstring value){
+    const char* temp = env->GetStringUTFChars(value, 0);
+    int len = env->GetStringUTFLength(value);
+    cppStr = std::string(temp, len);
+    env->ReleaseStringUTFChars(value, temp);
+    LOGV("[CPP] Java call C++, no return, pass string: %s", cppStr.c_str());
+}
 
 /**
  * 4.c++ call Java
